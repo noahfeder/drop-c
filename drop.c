@@ -1,15 +1,19 @@
 /**
  * drop.c
  */
- 
+
 #define _XOPEN_SOURCE 500
 
-#include <cs50.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <math.h>
 #include <time.h>
+#include <float.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <string.h>
+
 
 // constants
 #define DIM 7
@@ -17,7 +21,7 @@ typedef struct {
     int x;
     int y;
 } hit;
-
+typedef char* string;
 // board
 int board[DIM][DIM]; //7 x 7 board
 int rowCount[DIM]; //tracking tiles per row
@@ -27,6 +31,8 @@ bool levelEnd = false;
 
 
 // prototypes
+string GetString(void);
+int GetInt(void);
 void clear(void); //wipe board
 void greet(void); //welcome
 void init(void); //create board blank, seed tiles
@@ -35,13 +41,13 @@ void drop(int tile, int column); //add a tile
 void count(void); //generates row and column counts; must be done before and after checkMatch;
 int newTile(void); //generates random new tile 1-7 or o
 void userPrompt(int tile); //uses while loop to GetInt and asks which column to drop tile in;
-int checkMatch(hit hits[]); //successfully checks for matches and moves tiles down 
+int checkMatch(hit hits[]); //successfully checks for matches and moves tiles down
 void popTiles(hit hits[], int hitCount); //pop o tiles
 void clearHits(hit hits[], int hitCount); //clear cleared tiles
 void levelUp(void);
 bool alive(void); //works!!
 
-int main(int argc, string argv[]) 
+int main(int argc, string argv[])
 {
 
     srand(time(NULL)); //seed for tile generation
@@ -49,12 +55,12 @@ int main(int argc, string argv[])
     hit hits[DIM * DIM];
     // greet user with instructions
     greet(); //works
-    
+
     // initialize the board
     init(); //works w random placed tiles
     clear();
     draw();
-    hitCount = checkMatch(hits); 
+    hitCount = checkMatch(hits);
     while (hitCount > 0) {
         clearHits(hits, hitCount);
         popTiles(hits, hitCount);
@@ -70,7 +76,7 @@ int main(int argc, string argv[])
             clearHits(hits, hitCount);
             popTiles(hits, hitCount);
             hitCount = checkMatch(hits);
-        } 
+        }
         if (moveCount == (29 - (level*level))) {
             levelUp();
             moveCount = 0;
@@ -114,7 +120,7 @@ void drop(int tile, int column) {
             if (board[i][column] == 0) {
             board[i][column] = tile;
             break;
-            } 
+            }
         }
     } else {
         printf("Full column!\n");
@@ -127,15 +133,15 @@ void count(void) {
         for (int j = 0; j < DIM; j++) {
                 rowCount[i] = 0;
                 colCount[j] = 0;
-            }   
+            }
         }
-    
+
     for (int i = 0; i < DIM; i++) {
         for (int j = 0; j < DIM; j++) {
             if (board[i][j] != 0) {
                 rowCount[i]++;
                 colCount[j]++;
-            }   
+            }
         }
     }
 }
@@ -151,7 +157,7 @@ void userPrompt(int tile) {
     printf("\033[30;47mYour score is %i\nMoves: %i\nLevel:%i\n", score, moveCount, level);
     do {
         if (tile == 8) {
-            printf("\033[0mNew tile is o.\nWhich row?\n 1 2 3 4 5 6 7\n");    
+            printf("\033[0mNew tile is o.\nWhich row?\n 1 2 3 4 5 6 7\n");
         } else {
             printf("\033[0mNew tile is %i.\nWhich row?\n 1 2 3 4 5 6 7\n", tile);
         }
@@ -241,7 +247,7 @@ void popTiles(hit hits[], int hitCount) {
         }
         if (board[hits[i].x][hits[i].y - 1] == 9 && hits[i].y != 0) {
             board[hits[i].x][hits[i].y - 1] = newTile();
-        } 
+        }
         if (board[hits[i].x + 1][hits[i].y] == 8 && hits[i].x != (DIM - 1)) {
             board[hits[i].x + 1][hits[i].y] = 9;
         }
@@ -253,8 +259,8 @@ void popTiles(hit hits[], int hitCount) {
         }
         if (board[hits[i].x][hits[i].y - 1] == 8 && hits[i].y != 0) {
             board[hits[i].x][hits[i].y - 1] = 9;
-        } 
-        
+        }
+
     }
 }
 
@@ -290,9 +296,9 @@ void draw(void)
                 printf("\033[32;40;4m|");
             }
             if (board[i][j] == 0) {
-                printf("\033[32;40;4m |");    
+                printf("\033[32;40;4m |");
             } else if (board[i][j] == 8) {
-                printf("\033[32;40;4mo|");    
+                printf("\033[32;40;4mo|");
             } else if (board[i][j] == 9) {
                 printf("\033[31;40;4mo\033[32;40m|");
             } else {
@@ -313,9 +319,105 @@ bool alive(void)
             return true;
         }
     }
+
     if (full == 7) {
     return false;
     } else {
         return true;
     }
+}
+
+int GetInt(void)
+{
+    // try to get an int from user
+    while (true)
+    {
+        // get line of text, returning INT_MAX on failure
+        string line = GetString();
+        if (line == NULL)
+        {
+            return INT_MAX;
+        }
+
+        // return an int if only an int (possibly with
+        // leading and/or trailing whitespace) was provided
+        int n; char c;
+        if (sscanf(line, " %d %c", &n, &c) == 1)
+        {
+            free(line);
+            return n;
+        }
+        else
+        {
+            free(line);
+            printf("Retry: ");
+        }
+    }
+}
+
+string GetString(void)
+{
+    // growable buffer for chars
+    string buffer = NULL;
+
+    // capacity of buffer
+    unsigned int capacity = 0;
+
+    // number of chars actually in buffer
+    unsigned int n = 0;
+
+    // character read or EOF
+    int c;
+
+    // iteratively get chars from standard input
+    while ((c = fgetc(stdin)) != '\n' && c != EOF)
+    {
+        // grow buffer if necessary
+        if (n + 1 > capacity)
+        {
+            // determine new capacity: start at 32 then double
+            if (capacity == 0)
+            {
+                capacity = 32;
+            }
+            else if (capacity <= (UINT_MAX / 2))
+            {
+                capacity *= 2;
+            }
+            else
+            {
+                free(buffer);
+                return NULL;
+            }
+
+            // extend buffer's capacity
+            string temp = realloc(buffer, capacity * sizeof(char));
+            if (temp == NULL)
+            {
+                free(buffer);
+                return NULL;
+            }
+            buffer = temp;
+        }
+
+        // append current character to buffer
+        buffer[n++] = c;
+    }
+
+    // return NULL if user provided no input
+    if (n == 0 && c == EOF)
+    {
+        return NULL;
+    }
+
+    // minimize buffer
+    string minimal = malloc((n + 1) * sizeof(char));
+    strncpy(minimal, buffer, n);
+    free(buffer);
+
+    // terminate string
+    minimal[n] = '\0';
+
+    // return string
+    return minimal;
 }
