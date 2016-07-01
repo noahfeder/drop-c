@@ -283,6 +283,7 @@ void levelUp(void) {
         board[6][n] = 8;
     }
     level++;
+    checkMatch();
 }
 
 /**
